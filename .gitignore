@@ -48,4 +48,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Local agent and coding standards
+/AGENTS.md
+/CODING_STANDARDS.md
+/frontend-coding-standard.md
+
 .UEMP_Nextjs_Agent_Plan.docx
