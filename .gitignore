@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/test-results/
+/playwright-report/
+/.impeccable/review/
+/.impeccable/questions/
 
 # next.js
 /.next/
@@ -32,6 +36,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# generated Prisma client
+/generated/prisma/
 
 # vercel
 .vercel
@@ -39,3 +47,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.UEMP_Nextjs_Agent_Plan.docx

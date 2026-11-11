@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  LECTURER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum SemesterTerm {
+  FIRST
+  SECOND
+}
+
+enum ResultBatchStatus {
+  DRAFT
+  SUBMITTED
+  REJECTED
+  APPROVED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  sessions     Session[]
+  student      Student?
+  lecturer     Lecturer?
+  submittedBatches ResultBatch[] @relation("BatchSubmitter")
+  reviewedBatches  ResultBatch[] @relation("BatchReviewer")
+  auditEvents  AuditEvent[]
+}
+
+model Faculty {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  name        String
+  departments Department[]
+}
+
+model Department {
+  id        String      @id @default(cuid())
+  facultyId String
+  code      String
+  name      String
+  faculty   Faculty     @relation(fields: [facultyId], references: [id], onDelete: Restrict)
+  programs  Program[]
+  courses   Course[]
+  lecturers Lecturer[]
+
+  @@unique([facultyId, code])
+}
+
+model Program {
+  id           String           @id @default(cuid())
+  departmentId String
+  code         String
+  name         String
+  department   Department       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  students     Student[]
+  offerings    CourseOffering[]
+
+  @@unique([departmentId, code])
+}
+
+model Student {
+  id            String         @id @default(cuid())
+  userId        String         @unique
+  programId     String
+  matricNumber  String         @unique
+  level         Int
+  phone         String?
+  address       String?
+  user          User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  program       Program        @relation(fields: [programId], references: [id], onDelete: Restrict)
+  registrations Registration[]
+
+  @@index([programId, level])
+}
+
+model Lecturer {
+  id           String     @id @default(cuid())
+  userId       String     @unique
+  departmentId String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  offerings    CourseOffering[]
+}
+
+model AcademicSession {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  startsAt  DateTime
+  endsAt    DateTime
+  semesters Semester[]
+}
+
+model Semester {
+  id               String          @id @default(cuid())
+  sessionId        String
+  term             SemesterTerm
+  startsAt         DateTime
+  endsAt           DateTime
+  isActive         Boolean         @default(false)
+  registrationOpen Boolean         @default(false)
+  session          AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  offerings        CourseOffering[]
+
+  @@unique([sessionId, term])
+  @@index([isActive])
+}
+
+model Course {
+  id           String           @id @default(cuid())
+  departmentId String
+  code         String
+  title        String
+  defaultCreditUnits Int        @default(3)
+  department   Department       @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  offerings    CourseOffering[]
+
+  @@unique([departmentId, code])
+}
+
+model CourseOffering {
+  id          String         @id @default(cuid())
+  courseId    String
+  semesterId  String
+  programId   String
+  lecturerId  String?
+  level       Int
+  creditUnits Int
+  course      Course         @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  semester    Semester       @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  program     Program        @relation(fields: [programId], references: [id], onDelete: Restrict)
+  lecturer    Lecturer?      @relation(fields: [lecturerId], references: [id], onDelete: Restrict)
+  registrations Registration[]
+  resultBatches ResultBatch[]
+
+  @@unique([courseId, semesterId, programId, level])
+  @@index([semesterId, programId, level])
+}
+
+model Registration {
+  id                  String         @id @default(cuid())
+  studentId           String
+  offeringId          String
+  registeredAt        DateTime       @default(now())
+  creditUnitsSnapshot Int
+  student             Student        @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  offering            CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  result              Result?
+
+  @@unique([studentId, offeringId])
+  @@index([studentId, registeredAt])
+}
+
+model ResultBatch {
+  id          String            @id @default(cuid())
+  offeringId  String
+  status      ResultBatchStatus @default(DRAFT)
+  submitterId String
+  reviewerId  String?
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  feedback    String?
+  offering    CourseOffering    @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+  submitter   User              @relation("BatchSubmitter", fields: [submitterId], references: [id], onDelete: Restrict)
+  reviewer    User?             @relation("BatchReviewer", fields: [reviewerId], references: [id], onDelete: Restrict)
+  results     Result[]
+
+  @@index([offeringId, status])
+}
+
+model Result {
+  id             String       @id @default(cuid())
+  registrationId String       @unique
+  batchId         String
+  caScore         Decimal      @db.Decimal(5, 2)
+  examScore       Decimal      @db.Decimal(5, 2)
+  totalScore      Decimal      @db.Decimal(5, 2)
+  grade           String
+  gradePoint      Int
+  registration    Registration @relation(fields: [registrationId], references: [id], onDelete: Restrict)
+  batch           ResultBatch  @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  @@index([batchId])
+}
+
+model AuditEvent {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  entityType String
+  entityId   String
+  changes    Json
+  createdAt  DateTime @default(now())
+  actor      User     @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model LoginThrottle {
+  key       String   @id
+  attempts  Int
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

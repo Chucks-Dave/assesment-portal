@@ -1,0 +1,4 @@
+import type { ReactElement } from "react";
+import { AdminDashboardScreen } from "@/components/dashboard/admin-dashboard";
+
+export default function AdminOfferingsPage(): ReactElement { return <AdminDashboardScreen view="offerings" />; }

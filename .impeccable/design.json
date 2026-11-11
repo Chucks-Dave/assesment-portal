@@ -1,0 +1,342 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-11T07:52:04.251542+00:00",
+  "title": "Design System: UEMP",
+  "extensions": {
+    "colorMeta": {
+      "red": {
+        "role": "secondary",
+        "displayName": "Red",
+        "canonical": "#921f27",
+        "tonalRamp": [
+          "oklch(15% 0.0525 22.80)",
+          "oklch(27% 0.0975 22.80)",
+          "oklch(39% 0.1275 22.80)",
+          "oklch(51% 0.1500 22.80)",
+          "oklch(63% 0.1425 22.80)",
+          "oklch(75% 0.1125 22.80)",
+          "oklch(87% 0.0600 22.80)",
+          "oklch(95% 0.0225 22.80)"
+        ]
+      },
+      "red-deep": {
+        "role": "secondary",
+        "displayName": "Red Deep",
+        "canonical": "#74171d",
+        "tonalRamp": [
+          "oklch(15% 0.0443 22.97)",
+          "oklch(27% 0.0824 22.97)",
+          "oklch(39% 0.1077 22.97)",
+          "oklch(51% 0.1267 22.97)",
+          "oklch(63% 0.1204 22.97)",
+          "oklch(75% 0.0950 22.97)",
+          "oklch(87% 0.0507 22.97)",
+          "oklch(95% 0.0190 22.97)"
+        ]
+      },
+      "green": {
+        "role": "primary",
+        "displayName": "Green",
+        "canonical": "#24713f",
+        "tonalRamp": [
+          "oklch(15% 0.0382 151.51)",
+          "oklch(27% 0.0710 151.51)",
+          "oklch(39% 0.0928 151.51)",
+          "oklch(51% 0.1092 151.51)",
+          "oklch(63% 0.1037 151.51)",
+          "oklch(75% 0.0819 151.51)",
+          "oklch(87% 0.0437 151.51)",
+          "oklch(95% 0.0164 151.51)"
+        ]
+      },
+      "green-deep": {
+        "role": "primary",
+        "displayName": "Green Deep",
+        "canonical": "#19572f",
+        "tonalRamp": [
+          "oklch(15% 0.0320 151.55)",
+          "oklch(27% 0.0595 151.55)",
+          "oklch(39% 0.0778 151.55)",
+          "oklch(51% 0.0915 151.55)",
+          "oklch(63% 0.0869 151.55)",
+          "oklch(75% 0.0686 151.55)",
+          "oklch(87% 0.0366 151.55)",
+          "oklch(95% 0.0137 151.55)"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Background",
+        "canonical": "#ffffff",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(27% 0.0000 89.88)",
+          "oklch(39% 0.0000 89.88)",
+          "oklch(51% 0.0000 89.88)",
+          "oklch(63% 0.0000 89.88)",
+          "oklch(75% 0.0000 89.88)",
+          "oklch(87% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#222b27",
+        "tonalRamp": [
+          "oklch(15% 0.0051 166.59)",
+          "oklch(27% 0.0094 166.59)",
+          "oklch(39% 0.0124 166.59)",
+          "oklch(51% 0.0145 166.59)",
+          "oklch(63% 0.0138 166.59)",
+          "oklch(75% 0.0109 166.59)",
+          "oklch(87% 0.0058 166.59)",
+          "oklch(95% 0.0022 166.59)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "#5d6761",
+        "tonalRamp": [
+          "oklch(15% 0.0054 159.51)",
+          "oklch(27% 0.0100 159.51)",
+          "oklch(39% 0.0131 159.51)",
+          "oklch(51% 0.0155 159.51)",
+          "oklch(63% 0.0147 159.51)",
+          "oklch(75% 0.0116 159.51)",
+          "oklch(87% 0.0062 159.51)",
+          "oklch(95% 0.0023 159.51)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "canonical": "#f3f6f2",
+        "tonalRamp": [
+          "oklch(15% 0.0022 137.77)",
+          "oklch(27% 0.0040 137.77)",
+          "oklch(39% 0.0052 137.77)",
+          "oklch(51% 0.0062 137.77)",
+          "oklch(63% 0.0058 137.77)",
+          "oklch(75% 0.0046 137.77)",
+          "oklch(87% 0.0025 137.77)",
+          "oklch(95% 0.0009 137.77)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "canonical": "#dce2dc",
+        "tonalRamp": [
+          "oklch(15% 0.0036 145.49)",
+          "oklch(27% 0.0067 145.49)",
+          "oklch(39% 0.0088 145.49)",
+          "oklch(51% 0.0103 145.49)",
+          "oklch(63% 0.0098 145.49)",
+          "oklch(75% 0.0077 145.49)",
+          "oklch(87% 0.0041 145.49)",
+          "oklch(95% 0.0015 145.49)"
+        ]
+      },
+      "focus": {
+        "role": "neutral",
+        "displayName": "Focus",
+        "canonical": "#bc7321",
+        "tonalRamp": [
+          "oklch(15% 0.0451 63.26)",
+          "oklch(27% 0.0838 63.26)",
+          "oklch(39% 0.1096 63.26)",
+          "oklch(51% 0.1290 63.26)",
+          "oklch(63% 0.1225 63.26)",
+          "oklch(75% 0.0967 63.26)",
+          "oklch(87% 0.0516 63.26)",
+          "oklch(95% 0.0193 63.26)"
+        ]
+      },
+      "input-border": {
+        "role": "neutral",
+        "displayName": "Input Border",
+        "canonical": "#b8c3ba",
+        "tonalRamp": [
+          "oklch(15% 0.0061 151.04)",
+          "oklch(27% 0.0113 151.04)",
+          "oklch(39% 0.0148 151.04)",
+          "oklch(51% 0.0174 151.04)",
+          "oklch(63% 0.0165 151.04)",
+          "oklch(75% 0.0130 151.04)",
+          "oklch(87% 0.0069 151.04)",
+          "oklch(95% 0.0026 151.04)"
+        ]
+      },
+      "error-surface": {
+        "role": "neutral",
+        "displayName": "Error Surface",
+        "canonical": "#fff0ef",
+        "tonalRamp": [
+          "oklch(15% 0.0057 22.08)",
+          "oklch(27% 0.0106 22.08)",
+          "oklch(39% 0.0139 22.08)",
+          "oklch(51% 0.0163 22.08)",
+          "oklch(63% 0.0155 22.08)",
+          "oklch(75% 0.0122 22.08)",
+          "oklch(87% 0.0065 22.08)",
+          "oklch(95% 0.0024 22.08)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Base content heading."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Base reading text."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Primary control text."
+      }
+    },
+    "shadows": [
+      {
+        "name": "mobile-navigation",
+        "value": "0 12px 20px #17241b12",
+        "purpose": "Separate the open mobile menu from page content."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "Shared transform and photograph easing."
+      },
+      {
+        "name": "control-state",
+        "value": "160ms",
+        "purpose": "Button color and press feedback."
+      },
+      {
+        "name": "photo-crossfade",
+        "value": "440ms",
+        "purpose": "User-controlled hero photograph change."
+      },
+      {
+        "name": "service-photo",
+        "value": "320ms",
+        "purpose": "Fine-pointer service image zoom."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "Global animation and transition duration override; smooth scroll disabled."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop",
+        "value": "1050px"
+      },
+      {
+        "name": "mobile",
+        "value": "760px"
+      },
+      {
+        "name": "small-mobile",
+        "value": "450px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Portal and form actions.",
+      "html": "<button class=\"ds-primary\">Enter student portal</button>",
+      "css": ".ds-primary{font-family:var(--font-manrope,Manrope),sans-serif;display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:13px 25px;border:1px solid transparent;border-radius:3px;font-size:13px;font-weight:700;line-height:1.4;transition:background-color 160ms ease,color 160ms ease,transform 160ms cubic-bezier(.23,1,.32,1);background:var(--green,#24713f);color:white}.ds-primary:hover{background:var(--green-deep,#19572f)}.ds-primary:active{transform:scale(.97)}.ds-primary:focus-visible{outline:3px solid var(--focus,#bc7321);outline-offset:5px}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}.ds-primary:active{transform:none}}"
+    },
+    {
+      "name": "Outlined hero button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action over photographic media.",
+      "html": "<div class=\"ds-outline-stage\"><button class=\"ds-outline\">Explore student services</button></div>",
+      "css": ".ds-outline-stage{background:#1d3026;padding:20px}.ds-outline{font-family:var(--font-manrope,Manrope),sans-serif;display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:13px 25px;border:1px solid transparent;border-radius:3px;font-size:13px;font-weight:700;line-height:1.4;transition:background-color 160ms ease,color 160ms ease,transform 160ms cubic-bezier(.23,1,.32,1);background:#ffffff08;border-color:#ffffff90;color:white}.ds-outline:hover{background:white;color:var(--green-deep,#19572f)}.ds-outline:active{transform:scale(.97)}.ds-outline:focus-visible{outline:3px solid var(--focus,#bc7321);outline-offset:5px}@media(prefers-reduced-motion:reduce){.ds-outline{transition:none}.ds-outline:active{transform:none}}"
+    },
+    {
+      "name": "Email field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Visible label and accessible invalid state.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-email\">University email address</label><input id=\"ds-email\" type=\"email\" placeholder=\"you@university.edu\"></div>",
+      "css": ".ds-field{font-family:var(--font-manrope,Manrope),sans-serif;color:var(--ink,#222b27)}.ds-field label{display:block;margin-bottom:7px;font-size:12px;font-weight:750}.ds-field input{box-sizing:border-box;width:100%;min-height:50px;padding:13px 14px;border:1px solid var(--input-border,#b8c3ba);border-radius:4px;background:white;color:var(--ink,#222b27);font:inherit;font-size:14px;caret-color:var(--green,#24713f)}.ds-field input[aria-invalid=true]{border-color:var(--red,#921f27)}.ds-field input:focus-visible{outline:3px solid var(--focus,#bc7321);outline-offset:5px}@media(max-width:760px){.ds-field input{font-size:16px}}"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "White navigation with a compact green portal action.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Example navigation\"><a href=\"#about\">About UEMP</a><a href=\"#services\">Student services</a><a class=\"ds-nav-login\" href=\"/login\">Portal login</a></nav>",
+      "css": ".ds-nav{font-family:var(--font-manrope,Manrope),sans-serif;display:flex;align-items:center;gap:29px;padding:20px;background:white;font-size:12px;font-weight:650;color:var(--ink,#222b27)}.ds-nav a{color:inherit;text-decoration:none}.ds-nav a:hover{color:var(--red,#921f27)}.ds-nav a:focus-visible{outline:3px solid var(--focus,#bc7321);outline-offset:5px}.ds-nav .ds-nav-login{font-family:var(--font-manrope,Manrope),sans-serif;display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:13px 25px;border:1px solid transparent;border-radius:3px;font-size:13px;font-weight:700;line-height:1.4;transition:background-color 160ms ease,color 160ms ease,transform 160ms cubic-bezier(.23,1,.32,1);min-height:42px;padding:11px 19px;background:var(--green,#24713f);color:white}.ds-nav .ds-nav-login:hover{background:var(--green-deep,#19572f)}@media(max-width:760px){.ds-nav{align-items:stretch;flex-direction:column;gap:24px}}"
+    },
+    {
+      "name": "Service content panel",
+      "kind": "card",
+      "refersTo": "service-card",
+      "description": "Square inset content over a service photograph.",
+      "html": "<article class=\"ds-service\"><h3>Course registration</h3><p>Explore the registration guide for your academic journey.</p><a href=\"#guide-registration\">Learn more</a></article>",
+      "css": ".ds-service{font-family:var(--font-manrope,Manrope),sans-serif;max-width:320px;padding:25px 23px 23px;background:white;border-bottom:2px solid var(--green,#24713f);color:var(--ink,#222b27)}.ds-service h3{margin:0;font-size:18px;font-weight:750;letter-spacing:-.025em;line-height:1.4}.ds-service p{margin:11px 0 19px;color:var(--muted,#5d6761);font-size:12px;line-height:1.8}.ds-service a{color:var(--green,#24713f);font-size:11px;font-weight:750;text-decoration:none}.ds-service a:hover{color:var(--red,#921f27)}.ds-service a:focus-visible{outline:3px solid var(--focus,#bc7321);outline-offset:5px}"
+    },
+    {
+      "name": "Support disclosure",
+      "kind": "custom",
+      "refersTo": "support-disclosure",
+      "description": "Native expandable guidance with a thin divider.",
+      "html": "<details class=\"ds-faq\"><summary>How do I access the portal?<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"/></svg></summary><p>Use the account credentials provided by your university.</p></details>",
+      "css": ".ds-faq{font-family:var(--font-manrope,Manrope),sans-serif;border-block:1px solid #cbd5cb;color:var(--ink,#222b27)}.ds-faq summary{display:flex;justify-content:space-between;align-items:center;gap:24px;list-style:none;cursor:pointer;padding:23px 0;font-size:14px;font-weight:700}.ds-faq summary::-webkit-details-marker{display:none}.ds-faq svg{width:17px;height:20px;color:var(--green,#24713f)}.ds-faq[open] svg{transform:rotate(45deg)}.ds-faq p{padding:0 25px 25px 0;margin:0;color:var(--muted,#5d6761);font-size:13px;line-height:1.75}.ds-faq summary:focus-visible{outline:3px solid var(--focus,#bc7321);outline-offset:5px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The academic welcome",
+    "overview": "UEMP adapts the approved school reference into a university portal identity: university red frames the page, forest green marks actions, and white sections give photography and clear headings room to breathe. Manrope supplies a single readable voice across public pages and authentication.\n\nThe material is flat and restrained. Illustrative campus and student photographs carry the atmosphere; compact rectangular controls and carefully spaced text carry the tasks. The implementation is the visual source of truth; the supplied screenshot establishes the red/green direction rather than an independently approved generated composition.",
+    "keyCharacteristics": [
+      "University red framing and forest-green actions.",
+      "Photographic media with readable dark overlays.",
+      "Compact rectangular controls and generous section spacing.",
+      "Responsive stacking, visible focus, and reduced motion."
+    ],
+    "rules": [
+      {
+        "name": "The Action Color Rule",
+        "body": "Use forest green for primary actions and university red for section headings and page framing.",
+        "section": "colors"
+      },
+      {
+        "name": "The Flat Surface Rule",
+        "body": "Use color, borders, and image overlap to separate content; reserve the existing diffuse shadow for the mobile navigation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do retain the red/green identity and use the primary green treatment for portal actions.",
+      "Do keep the Manrope hierarchy, visible keyboard focus, and mobile input text at 16px.",
+      "Do use illustrative photography without presenting it as a supplied institutional asset.",
+      "Do preserve user-controlled slides and the reduced-motion override."
+    ],
+    "donts": [
+      "Don't replace compact rectangular controls with pill-shaped buttons.",
+      "Don't add ambient card shadows; use the existing flat surfaces and borders.",
+      "Don't imply that illustrative photographs establish a particular institution."
+    ]
+  }
+}
