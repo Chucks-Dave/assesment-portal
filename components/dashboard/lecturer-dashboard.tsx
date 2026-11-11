@@ -14,11 +14,13 @@ import { getLecturerDashboard, getOfferingRoster, lecturerRosterQueryKey, LECTUR
 import { apiErrorMessage } from "@/lib/http-client";
 import { resultFormSchema, type LecturerDashboard, type LecturerOffering, type OfferingRoster, type ResultForm } from "@/shared/lecturer";
 
-function LecturerSidebar({ open, close, closeRef, sidebarRef }: { open: boolean; close: () => void; closeRef: RefObject<HTMLButtonElement | null>; sidebarRef: RefObject<HTMLElement | null> }): ReactElement {
+type LecturerView = "dashboard" | "courses" | "results";
+
+function LecturerSidebar({ open, close, closeRef, sidebarRef, view }: { open: boolean; close: () => void; closeRef: RefObject<HTMLButtonElement | null>; sidebarRef: RefObject<HTMLElement | null>; view: LecturerView }): ReactElement {
   return <><button className={`lecturerScrim ${open ? "lecturerScrimOpen" : ""}`} onClick={close} tabIndex={-1} aria-hidden="true" />
     <aside ref={sidebarRef} className={`lecturerSidebar ${open ? "lecturerSidebarOpen" : ""}`} id="lecturer-navigation" aria-label="Lecturer navigation" role={open ? "dialog" : undefined} aria-modal={open || undefined}>
       <div className="lecturerSidebarHead"><Link className="lecturerBrand" href="/"><span><Icon name="book" /></span>UEMP</Link><button ref={closeRef} className="lecturerClose" onClick={close} aria-label="Close navigation"><Icon name="close" /></button></div>
-      <nav className="lecturerNav"><p>Lecturer workspace</p><a className="lecturerActiveNav" href="#overview" onClick={close}><Icon name="grid" />Dashboard</a><a href="#courses" onClick={close}><Icon name="layers" />Assigned courses</a><a href="#results" onClick={close}><Icon name="chart" />Result entry</a><p>Support</p><Link href="/#support"><Icon name="help" />Help centre</Link></nav>
+      <nav className="lecturerNav"><p>Lecturer workspace</p><Link className={view === "dashboard" ? "lecturerActiveNav" : ""} href="/lecturer/dashboard" onClick={close}><Icon name="grid" />Dashboard</Link><Link className={view === "courses" ? "lecturerActiveNav" : ""} href="/lecturer/courses" onClick={close}><Icon name="layers" />Assigned courses</Link><Link className={view === "results" ? "lecturerActiveNav" : ""} href="/lecturer/results" onClick={close}><Icon name="chart" />Result entry</Link><p>Support</p><Link href="/#support"><Icon name="help" />Help centre</Link></nav>
       <p className="lecturerSidebarNote">Scores remain editable as drafts until they are submitted for administrator approval.</p>
     </aside></>;
 }
@@ -82,7 +84,7 @@ function DashboardBody({ dashboard }: { dashboard: LecturerDashboard }): ReactEl
   </main>;
 }
 
-export function LecturerDashboardScreen(): ReactElement {
+export function LecturerDashboardScreen({ view = "dashboard" }: { view?: LecturerView }): ReactElement {
   const [navOpen, setNavOpen] = useState(false); const router = useRouter(); const client = useQueryClient();
   const menu = useRef<HTMLButtonElement>(null); const closeButton = useRef<HTMLButtonElement>(null); const sidebar = useRef<HTMLElement>(null);
   const dashboard = useQuery({ queryKey: LECTURER_DASHBOARD_QUERY_KEY, queryFn: ({ signal }) => getLecturerDashboard(signal) });
@@ -95,7 +97,7 @@ export function LecturerDashboardScreen(): ReactElement {
   }; window.addEventListener("keydown", key); return (): void => window.removeEventListener("keydown", key); }, [navOpen]);
   if (dashboard.isPending) return <div className="lecturerLoading" role="status"><span />Loading lecturer workspace…</div>;
   if (!dashboard.data || dashboard.error) { const denied = axios.isAxiosError(dashboard.error) && [401,403].includes(dashboard.error.response?.status ?? 0); return <main className="lecturerState"><div><Icon name={denied ? "lock" : "help"} /><h1>{denied ? "Lecturer access required" : "We couldn’t load your dashboard"}</h1><p>{denied ? "Sign in with an active lecturer account." : apiErrorMessage(dashboard.error)}</p><Link className="button button-green" href="/login">Go to sign in</Link></div></main>; }
-  return <div className="lecturerShell"><a className="skip-link" href="#lecturer-main">Skip to dashboard content</a><LecturerSidebar open={navOpen} close={closeNav} closeRef={closeButton} sidebarRef={sidebar} /><div className="lecturerWorkspace" inert={navOpen ? true : undefined}>
+  return <div className="lecturerShell"><a className="skip-link" href="#lecturer-main">Skip to dashboard content</a><LecturerSidebar open={navOpen} close={closeNav} closeRef={closeButton} sidebarRef={sidebar} view={view} /><div className="lecturerWorkspace" inert={navOpen ? true : undefined}>
     <header className="lecturerTopbar"><button ref={menu} className="lecturerMenu" onClick={(): void => setNavOpen(true)} aria-label="Open navigation" aria-controls="lecturer-navigation" aria-expanded={navOpen}><Icon name="menu" /></button><div><Icon name="grid" />Lecturer portal</div><button className="lecturerSignOut" onClick={(): void => logout.mutate()} disabled={logout.isPending}><Icon name="logout" />{logout.isPending ? "Signing out…" : "Sign out"}</button></header>
     {logout.isError && <p className="lecturerFormError lecturerLogoutError" role="alert">{apiErrorMessage(logout.error)}</p>}<DashboardBody dashboard={dashboard.data} />
   </div></div>;

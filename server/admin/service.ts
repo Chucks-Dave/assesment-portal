@@ -1,10 +1,11 @@
 import "server-only";
 
-import { Prisma, ResultBatchStatus } from "@/generated/prisma/client";
+import { Prisma, ResultBatchStatus, UserRole, UserStatus } from "@/generated/prisma/client";
+import { hashPassword } from "@/server/auth/password";
 import type { AuthUser } from "@/server/auth/service";
 import { prisma } from "@/server/db";
 import { HttpError } from "@/server/http";
-import type { AdminPageQuery, CourseCreate, OfferingCreate, OfferingUpdate, ResultBatchQuery, ResultRejection } from "./schema";
+import type { AdminPageQuery, AdminUserCreate, AdminUserPassword, AdminUserQuery, AdminUserStatus, CourseCreate, OfferingCreate, OfferingUpdate, ResultBatchQuery, ResultRejection } from "./schema";
 
 const courseSelect = { id: true, code: true, title: true, defaultCreditUnits: true,
   department: { select: { id: true, code: true, name: true } },
@@ -18,6 +19,13 @@ const offeringSelect = { id: true, level: true, creditUnits: true,
   lecturer: { select: { id: true, user: { select: { name: true } } } },
   _count: { select: { registrations: true } },
 } satisfies Prisma.CourseOfferingSelect;
+
+const adminUserSelect = {
+  id: true, name: true, email: true, role: true, status: true, createdAt: true,
+  student: { select: { matricNumber: true, level: true, program: { select: { id: true, code: true, name: true } } } },
+  lecturer: { select: { department: { select: { id: true, code: true, name: true } } } },
+  _count: { select: { sessions: true } },
+} satisfies Prisma.UserSelect;
 
 function page<T extends { id: string }>(records: T[], limit: number) {
   const hasMore = records.length > limit;
@@ -44,6 +52,80 @@ export async function getAdminOptions() {
     prisma.course.findMany({ select: courseSelect, orderBy: { code: "asc" }, take: 100 }),
   ]);
   return { departments, programs, semesters, lecturers, courses };
+}
+
+export async function getUsers(query: AdminUserQuery) {
+  const where: Prisma.UserWhereInput = {
+    role: query.role,
+    status: query.status,
+    OR: query.search ? [
+      { name: { contains: query.search, mode: "insensitive" } },
+      { email: { contains: query.search, mode: "insensitive" } },
+      { student: { matricNumber: { contains: query.search, mode: "insensitive" } } },
+    ] : undefined,
+  };
+  const records = await prisma.user.findMany({ where, select: adminUserSelect, orderBy: { id: "asc" },
+    cursor: query.cursor ? { id: query.cursor } : undefined, skip: query.cursor ? 1 : 0, take: query.limit + 1 });
+  return page(records, query.limit);
+}
+
+export async function createUser(actor: AuthUser, input: AdminUserCreate) {
+  const passwordHash = await hashPassword(input.password);
+  const academicProfile = input.role === UserRole.STUDENT ? { student: { create: {
+    programId: input.programId!, matricNumber: input.matricNumber!, level: input.level!,
+  } } } : input.role === UserRole.LECTURER ? { lecturer: { create: { departmentId: input.departmentId! } } } : {};
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({ data: { name: input.name, email: input.email, passwordHash, role: input.role, ...academicProfile }, select: adminUserSelect });
+      await tx.auditEvent.create({ data: { actorId: actor.id, action: "USER_ACCOUNT_CREATED", entityType: "User", entityId: user.id,
+        changes: { role: input.role, email: input.email } } });
+      return user;
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new HttpError(409, "USER_ACCOUNT_EXISTS", "An account with this email or matriculation number already exists.");
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      throw new HttpError(422, "INVALID_ACADEMIC_ASSIGNMENT", "The selected programme or department does not exist.");
+    }
+    throw error;
+  }
+}
+
+export async function updateUserStatus(actor: AuthUser, userId: string, input: AdminUserStatus) {
+  if (actor.id === userId && input.status !== UserStatus.ACTIVE) {
+    throw new HttpError(409, "CANNOT_DISABLE_SELF", "You cannot suspend or deactivate your own administrator account.");
+  }
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.user.updateMany({ where: { id: userId }, data: { status: input.status } });
+    if (updated.count === 0) throw new HttpError(404, "USER_ACCOUNT_NOT_FOUND", "User account was not found.");
+    if (input.status !== UserStatus.ACTIVE) await tx.session.deleteMany({ where: { userId } });
+    await tx.auditEvent.create({ data: { actorId: actor.id, action: "USER_STATUS_CHANGED", entityType: "User", entityId: userId, changes: { status: input.status } } });
+    return tx.user.findUniqueOrThrow({ where: { id: userId }, select: adminUserSelect });
+  });
+}
+
+export async function revokeUserSessions(actor: AuthUser, userId: string): Promise<{ revokedSessions: number }> {
+  if (actor.id === userId) throw new HttpError(409, "CANNOT_REVOKE_SELF", "Use Sign out to end your own administrator session.");
+  return prisma.$transaction(async (tx) => {
+    const exists = await tx.user.count({ where: { id: userId } });
+    if (exists === 0) throw new HttpError(404, "USER_ACCOUNT_NOT_FOUND", "User account was not found.");
+    const revoked = await tx.session.deleteMany({ where: { userId } });
+    await tx.auditEvent.create({ data: { actorId: actor.id, action: "USER_SESSIONS_REVOKED", entityType: "User", entityId: userId, changes: { revokedSessions: revoked.count } } });
+    return { revokedSessions: revoked.count };
+  });
+}
+
+export async function resetUserPassword(actor: AuthUser, userId: string, input: AdminUserPassword): Promise<{ revokedSessions: number }> {
+  if (actor.id === userId) throw new HttpError(409, "CANNOT_RESET_SELF", "Use the account recovery process to change your own administrator password.");
+  const passwordHash = await hashPassword(input.password);
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.user.updateMany({ where: { id: userId }, data: { passwordHash } });
+    if (updated.count === 0) throw new HttpError(404, "USER_ACCOUNT_NOT_FOUND", "User account was not found.");
+    const revoked = await tx.session.deleteMany({ where: { userId } });
+    await tx.auditEvent.create({ data: { actorId: actor.id, action: "USER_PASSWORD_RESET", entityType: "User", entityId: userId, changes: { sessionsRevoked: revoked.count } } });
+    return { revokedSessions: revoked.count };
+  });
 }
 
 export async function getCourses(query: AdminPageQuery) {

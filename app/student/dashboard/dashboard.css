@@ -737,6 +737,35 @@ label.courseChoice {
   font-size: 13px;
 }
 
+.resultsHeaderActions {
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+}
+
+.printButton {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid #cdd8ce;
+  border-radius: 3px;
+  background: #fff;
+  color: var(--green-deep);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.printButton svg {
+  width: 16px;
+}
+
+.printOnly {
+  display: none;
+}
+
 .resultSummary {
   display: grid;
   grid-template-columns: repeat(3, minmax(120px, 1fr)) auto;
@@ -976,6 +1005,182 @@ label.courseChoice {
   text-underline-offset: 3px;
 }
 
+.profilePage {
+  max-width: 1080px;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.profileHeader h1 {
+  font-size: clamp(27px, 3vw, 38px);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+
+.profileHeader p {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.profileGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.profileIdentity,
+.profileContact {
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+.profileSectionHead {
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.profileSectionHead > span {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  background: #e5efe6;
+  color: var(--green-deep);
+}
+
+.profileSectionHead svg {
+  width: 20px;
+}
+
+.profileSectionHead h2 {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.profileSectionHead p {
+  max-width: 48ch;
+  margin-top: 3px;
+  font-size: 10px;
+}
+
+.profileIdentity dl {
+  padding: 4px 22px;
+}
+
+.profileIdentity dl > div {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.7fr) minmax(0, 1fr);
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.profileIdentity dl > div:last-child {
+  border-bottom: 0;
+}
+
+.profileIdentity dt {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.profileIdentity dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.profileContact form {
+  padding: 22px;
+}
+
+.profileContact form > label {
+  display: block;
+  margin: 0 0 7px;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.profileContact form > label:not(:first-child) {
+  margin-top: 18px;
+}
+
+.profileContact input,
+.profileContact textarea {
+  width: 100%;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.profileContact input {
+  min-height: 50px;
+  padding: 12px 14px;
+}
+
+.profileContact textarea {
+  min-height: 132px;
+  padding: 13px 14px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.profileContact input[aria-invalid="true"],
+.profileContact textarea[aria-invalid="true"] {
+  border-color: var(--red);
+}
+
+.profileFieldHelp,
+.profileFieldError {
+  margin-top: 5px;
+  font-size: 10px;
+}
+
+.profileFieldError {
+  color: var(--red-deep);
+}
+
+.profileSuccess {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 16px;
+  padding: 11px 13px;
+  background: #edf5ee;
+  color: var(--green-deep);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.profileSuccess svg {
+  width: 15px;
+}
+
+.profileFormActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
 .loading,
 .statePage {
   min-height: 100dvh;
@@ -1044,6 +1249,7 @@ label.courseChoice {
   .topbar { padding-inline: 22px; }
   .contentGrid { grid-template-columns: minmax(0, 1fr); }
   .rightRail { grid-template-columns: 1fr 1fr; }
+  .profileGrid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 820px) {
@@ -1130,7 +1336,8 @@ label.courseChoice {
   .statusSummary { justify-items: start; margin-top: 16px; text-align: left; }
   .selectionBar .button { width: 100%; margin-top: 14px; }
   .resultsHeader { display: block; }
-  .resultsHeader .sessionPill { margin-top: 16px; }
+  .resultsHeaderActions { justify-items: start; margin-top: 16px; }
+  .resultsHeader .sessionPill { margin-top: 0; }
   .resultSummary { grid-template-columns: 1fr 1fr; }
   .resultSummary > div:first-child { grid-column: 1 / -1; border-bottom: 1px solid #ccdbcd; }
   .resultSummary > div:nth-child(3) { border-right: 0; }
@@ -1138,6 +1345,15 @@ label.courseChoice {
   .resultRow { grid-template-columns: 64px repeat(4, minmax(38px, 1fr)); padding-inline: 16px; }
   .historyList summary { padding-inline: 16px; }
   .historySummary { flex-wrap: wrap; gap: 6px 14px; padding-inline: 16px; }
+  .profileHeader { display: block; }
+  .profileHeader .sessionPill { margin-top: 16px; }
+  .profileSectionHead,
+  .profileContact form { padding-inline: 16px; }
+  .profileIdentity dl { padding-inline: 16px; }
+  .profileIdentity dl > div { grid-template-columns: 1fr; gap: 4px; }
+  .profileContact input,
+  .profileContact textarea { font-size: 16px; }
+  .profileFormActions .button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1149,4 +1365,52 @@ label.courseChoice {
 
 @media (prefers-reduced-transparency: reduce) {
   .topbar { background: #fff; backdrop-filter: none; }
+}
+
+@media print {
+  @page { size: A4 portrait; margin: 16mm; }
+
+  body { background: #fff !important; color: #17211c; }
+  .sidebar,
+  .topbar,
+  .scrim,
+  .skip-link,
+  .logoutError,
+  .screenOnly,
+  .coursePage > :not(.printOnly),
+  .resultsPage > :not(.printOnly) { display: none !important; }
+  .shell,
+  .workspace { min-height: auto; background: #fff; }
+  .workspace { margin-left: 0; }
+  .main,
+  .coursePage,
+  .resultsPage { width: 100%; max-width: none; margin: 0; padding: 0; }
+  .printOnly { display: block; }
+  .printDocument { color: #17211c; font-family: Manrope, Arial, sans-serif; }
+  .printBrand { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 14px; border-bottom: 2px solid #74171d; }
+  .printBrand > div { display: flex; align-items: center; gap: 9px; color: #74171d; font-size: 22px; }
+  .printBrand svg { width: 26px; }
+  .printBrand p { margin: 0; color: #4f5d54; font-size: 9px; }
+  .printTitle { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin: 24px 0 18px; }
+  .printTitle h1 { font-size: 23px; line-height: 1.2; letter-spacing: -0.025em; }
+  .printTitle p { margin: 0; color: #4f5d54; font-size: 9px; white-space: nowrap; }
+  .printIdentity { display: grid; grid-template-columns: 1fr 1fr; margin: 0 0 20px; border-top: 1px solid #d9d9d9; border-left: 1px solid #d9d9d9; }
+  .printIdentity > div { padding: 9px 11px; border-right: 1px solid #d9d9d9; border-bottom: 1px solid #d9d9d9; break-inside: avoid; }
+  .printIdentity dt,
+  .printTotals dt { color: #4f5d54; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .printIdentity dd,
+  .printTotals dd { margin: 3px 0 0; font-size: 10px; font-weight: 700; }
+  .printTable { width: 100%; border-collapse: collapse; font-size: 9px; }
+  .printTable th,
+  .printTable td { padding: 8px 9px; border: 1px solid #d9d9d9; text-align: left; vertical-align: middle; }
+  .printTable thead { display: table-header-group; }
+  .printTable thead th { background: #263e31 !important; color: #fff !important; font-size: 8px; letter-spacing: 0.04em; text-transform: uppercase; print-color-adjust: exact; }
+  .printTable tbody tr:nth-child(even) { background: #f4f6f3 !important; print-color-adjust: exact; }
+  .printTable tfoot th { text-align: right; }
+  .printTable tr { break-inside: avoid; }
+  .printTotals { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px 0 0; border: 1px solid #d9d9d9; }
+  .printTotals > div { padding: 10px 12px; border-right: 1px solid #d9d9d9; }
+  .printTotals > div:last-child { border-right: 0; }
+  .printTotals dd { font-size: 15px; }
+  .printDisclaimer { margin-top: 18px; color: #4f5d54; font-size: 8px; line-height: 1.5; }
 }

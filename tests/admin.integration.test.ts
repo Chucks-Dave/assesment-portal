@@ -15,6 +15,11 @@ let batchesGet: typeof import("../app/api/admin/result-batches/route").GET;
 let batchGet: typeof import("../app/api/admin/result-batches/[id]/route").GET;
 let batchApprove: typeof import("../app/api/admin/result-batches/[id]/approve/route").POST;
 let batchReject: typeof import("../app/api/admin/result-batches/[id]/reject/route").POST;
+let usersGet: typeof import("../app/api/admin/users/route").GET;
+let usersPost: typeof import("../app/api/admin/users/route").POST;
+let userPatch: typeof import("../app/api/admin/users/[id]/route").PATCH;
+let userSessionsDelete: typeof import("../app/api/admin/users/[id]/sessions/route").DELETE;
+let userPasswordPatch: typeof import("../app/api/admin/users/[id]/password/route").PATCH;
 const origin = "http://localhost:3000"; const adminToken = "c".repeat(64); const studentToken = "d".repeat(64);
 
 function request(path: string, token: string, method = "GET", body?: object): NextRequest {
@@ -29,6 +34,8 @@ beforeAll(async (): Promise<void> => {
   vi.stubEnv("DATABASE_URL", `postgresql://postgres:postgres@${socket.getServerConn()}/postgres`); vi.stubEnv("AUTH_ORIGIN", origin);
   ({ prisma } = await import("../server/db")); ({ GET: dashboardGet } = await import("../app/api/admin/dashboard/route")); ({ POST: coursePost } = await import("../app/api/admin/courses/route")); ({ POST: offeringPost } = await import("../app/api/admin/offerings/route")); ({ PATCH: offeringPatch } = await import("../app/api/admin/offerings/[id]/route"));
   ({ GET: batchesGet } = await import("../app/api/admin/result-batches/route")); ({ GET: batchGet } = await import("../app/api/admin/result-batches/[id]/route")); ({ POST: batchApprove } = await import("../app/api/admin/result-batches/[id]/approve/route")); ({ POST: batchReject } = await import("../app/api/admin/result-batches/[id]/reject/route"));
+  ({ GET: usersGet, POST: usersPost } = await import("../app/api/admin/users/route")); ({ PATCH: userPatch } = await import("../app/api/admin/users/[id]/route"));
+  ({ DELETE: userSessionsDelete } = await import("../app/api/admin/users/[id]/sessions/route")); ({ PATCH: userPasswordPatch } = await import("../app/api/admin/users/[id]/password/route"));
   await prisma.user.createMany({ data: [{ id: "admin", email: "admin@test.dev", name: "Admin", passwordHash: "unused", role: UserRole.ADMIN }, { id: "student-user", email: "student@test.dev", name: "Student", passwordHash: "unused", role: UserRole.STUDENT }, { id: "lecturer-user", email: "lecturer@test.dev", name: "Lecturer", passwordHash: "unused", role: UserRole.LECTURER }] });
   await prisma.faculty.create({ data: { id: "faculty", code: "SCI", name: "Science" } });
   await prisma.department.createMany({ data: [{ id: "cs", facultyId: "faculty", code: "CSC", name: "Computer Science" }, { id: "math", facultyId: "faculty", code: "MTH", name: "Mathematics" }] });
@@ -82,5 +89,26 @@ describe("admin academic endpoints", (): void => {
     expect((await batchApprove(request("result-batches/submitted-batch/approve", adminToken, "POST", {}), { params: Promise.resolve({ id: "submitted-batch" }) })).status).toBe(200);
     expect((await batchApprove(request("result-batches/submitted-batch/approve", adminToken, "POST", {}), { params: Promise.resolve({ id: "submitted-batch" }) })).status).toBe(409);
     expect(await prisma.auditEvent.count()).toBe(2);
+  });
+  it("creates role-aware accounts and controls their access lifecycle", async (): Promise<void> => {
+    const createdResponse = await usersPost(request("users", adminToken, "POST", {
+      name: "Second Student", email: "second.student@test.dev", password: "A secure test password", role: UserRole.STUDENT,
+      programId: "cs-program", matricNumber: "UEMP/002", level: 200,
+    }));
+    expect(createdResponse.status).toBe(200);
+    const created = await payload(createdResponse);
+    expect(created).toMatchObject({ email: "second.student@test.dev", role: UserRole.STUDENT, status: "ACTIVE", student: { matricNumber: "UEMP/002", program: { id: "cs-program" } } });
+    expect((await usersPost(request("users", adminToken, "POST", { name: "Invalid", email: "invalid@test.dev", password: "A secure test password", role: UserRole.STUDENT }))).status).toBe(422);
+    expect((await payload(await usersGet(request("users?search=UEMP%2F002&role=STUDENT", adminToken)))).items).toHaveLength(1);
+    await prisma.session.create({ data: { userId: created.id, tokenHash: createHash("sha256").update("created-user-token").digest("hex"), expiresAt: new Date("2099-01-01") } });
+    const suspended = await userPatch(request(`users/${created.id}`, adminToken, "PATCH", { status: "SUSPENDED" }), { params: Promise.resolve({ id: created.id }) });
+    expect(suspended.status).toBe(200); expect(await prisma.session.count({ where: { userId: created.id } })).toBe(0);
+    await userPatch(request(`users/${created.id}`, adminToken, "PATCH", { status: "ACTIVE" }), { params: Promise.resolve({ id: created.id }) });
+    await prisma.session.create({ data: { userId: created.id, tokenHash: createHash("sha256").update("second-created-user-token").digest("hex"), expiresAt: new Date("2099-01-01") } });
+    expect((await userPasswordPatch(request(`users/${created.id}/password`, adminToken, "PATCH", { password: "A replacement password" }), { params: Promise.resolve({ id: created.id }) })).status).toBe(200);
+    expect(await prisma.session.count({ where: { userId: created.id } })).toBe(0);
+    expect((await userSessionsDelete(request(`users/${created.id}/sessions`, adminToken, "DELETE"), { params: Promise.resolve({ id: created.id }) })).status).toBe(200);
+    expect(await prisma.auditEvent.count({ where: { entityId: created.id } })).toBe(5);
+    expect((await userPatch(request("users/admin", adminToken, "PATCH", { status: "SUSPENDED" }), { params: Promise.resolve({ id: "admin" }) })).status).toBe(409);
   });
 });

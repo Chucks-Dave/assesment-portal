@@ -208,6 +208,10 @@ Approved results and academic history extend this shell without changing its hie
 
 Cursor pagination names the collection it extends: results load more results and history loads more semesters. A next-page failure leaves existing records in place and offers an adjacent retry. Initial and other non-authentication failures offer retry; authentication or authorization failures direct the student to sign in.
 
+Authenticated browser-print views are purpose-built academic documents, not printed captures of the portal shell. Hide navigation, workspace chrome, and screen-only controls; retain the UEMP identity and document title; show the student identity and relevant academic or semester context; and print the complete applicable record set, including records beyond the cursor pages already loaded on screen. Every student copy must plainly state that it is not a certified university document or transcript.
+
+Student profile pages separate university-managed identity from student-maintained contact details. On wide screens, the read-only identity panel sits beside the editable contact panel; narrower layouts stack them, and small screens collapse identity facts into label-value pairs while contact controls and the save action fill the available width. Keep validation adjacent to its field, expose request failures as alerts, and confirm a successful save with an inline status message only after the returned values have replaced the form state. Disable submission when nothing has changed or while a save is pending.
+
 ## Admin dashboard
 
 Administration extends the authenticated Operate shell with the same 252px university-red navigation, pale workspace, flat white panels, hairline borders, compact type, and green primary actions. The first viewport prioritizes active-registration context, institution counts, and recent publishing activity; catalogue and offering forms sit directly below rather than hiding core work behind decorative widgets.
@@ -218,8 +222,14 @@ Course creation asks the administrator for default credit units alongside the co
 
 Admin navigation uses real pages rather than in-page anchors: overview, course catalogue, semester offerings, and result approval each retain the shared shell while presenting one focused task. Result approval uses a queue-and-detail composition on wide screens and stacks the queue above the horizontally contained score table on narrow screens. Approval remains the green committed action; returning a batch uses a restrained red outline and requires adjacent written feedback.
 
+User management uses the same focused-page model. On wide screens, place the account-creation form beside the larger searchable user directory and keep the form available while the directory scrolls; below the compact workspace breakpoint, stack the form before the directory, then collapse filters and account rows into readable single-column groups on small screens. Account creation reveals academic fields by role: students require programme, matriculation number, and level; lecturers require department; administrators do not receive academic fields.
+
+Directory rows keep identity, role, status, active-session count, and actions distinct. Use explicit `Active`, `Suspended`, and `Inactive` status text, with `Suspend`, `Deactivate`, or `Activate` actions that state the resulting account condition. Mark the signed-in administrator as `Current account` and replace self-directed status, session, and password actions with that protective marker. Password reset is a separate section for the selected account, states that all active sessions will be revoked, keeps validation and result feedback adjacent to the new-password field, and provides clear close and reset actions.
+
 ## Lecturer dashboard
 
 The lecturer workspace reuses the authenticated Operate shell and places the assigned-course list directly above the active result sheet. Status badges distinguish untouched, draft, rejected, submitted, and approved work without replacing explicit text. Score inputs retain visible labels through the table headers and per-student accessible names; administrator feedback stays adjacent to the affected batch.
+
+Lecturer navigation uses real pages rather than in-page anchors: dashboard, assigned courses, and result entry each retain the shared shell and expose the active destination in the sidebar. In-page anchors remain appropriate only for skip links or navigation into a genuinely shared public-page section.
 
 On mobile the navigation becomes the same focus-managed drawer used by other authenticated workspaces. Summary facts and course records stack, while the roster table remains semantically tabular inside horizontal containment. Score controls use 16px text and draft/submission actions become full-width controls.

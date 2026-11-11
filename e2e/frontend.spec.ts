@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import type { AdminUser, AdminUserInput } from "@/shared/admin";
 
 const user = {
   id: "browser-demo",
@@ -49,14 +50,15 @@ test("landing navigation, linked guides, and responsive layout", async ({
 
 test("student dashboard is responsive and keeps academic data scannable", async ({ page }): Promise<void> => {
   let algorithmsRegistered = false;
+  const profile = { id: "student-a", matricNumber: "UEMP/CSC/2026/001", level: 200,
+    phone: null as string | null, address: null as string | null, user: { name: "Okechukwu David", email: "student@example.test" },
+    program: { id: "program", code: "BSC-CS", name: "Computer Science",
+      department: { id: "department", code: "CSC", name: "Computer Science",
+        faculty: { id: "faculty", code: "SCI", name: "Faculty of Science" } } } };
   await page.route("**/api/student/dashboard", async (route): Promise<void> => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
       statusCode: 200, message: "Student dashboard loaded.", payload: {
-        student: { id: "student-a", matricNumber: "UEMP/CSC/2026/001", level: 200,
-          phone: null, address: null, user: { name: "Okechukwu David", email: "student@example.test" },
-          program: { id: "program", code: "BSC-CS", name: "Computer Science",
-            department: { id: "department", code: "CSC", name: "Computer Science",
-              faculty: { id: "faculty", code: "SCI", name: "Faculty of Science" } } } },
+        student: profile,
         activeSemester: { id: "semester", term: "FIRST", registrationOpen: true,
           session: { id: "session", name: "2026/2027" } },
         registeredUnits: 15,
@@ -93,8 +95,15 @@ test("student dashboard is responsive and keeps academic data scannable", async 
       offering: { id: "offering-algorithms", course: { code: "CSC205", title: "Algorithm Design" },
         semester: { id: "semester", term: "FIRST", session: { id: "session", name: "2026/2027" } } },
     }] : [];
-    await route.fulfill({ json: { statusCode: 200, message: "Registrations loaded.", payload: { nextCursor: null, items } } });
+    await route.fulfill({ json: { statusCode: 200, message: "Registrations loaded.", payload: { nextCursor: algorithmsRegistered ? "registration-page-2" : null, items } } });
   });
+  await page.route("**/api/student/registrations?limit=50&semesterId=semester&cursor=registration-page-2", async (route): Promise<void> => route.fulfill({ json: {
+    statusCode: 200, message: "Registrations loaded.", payload: { nextCursor: null, items: [{
+      id: "registration-web", registeredAt: "2026-11-11T08:00:00.000Z", creditUnitsSnapshot: 2,
+      offering: { id: "offering-web", course: { code: "CSC207", title: "Web Engineering" },
+        semester: { id: "semester", term: "FIRST", session: { id: "session", name: "2026/2027" } } },
+    }] },
+  } }));
   await page.route("**/api/student/registrations/registration-algorithms", async (route): Promise<void> => {
     await new Promise((resolve) => setTimeout(resolve, 250));
     algorithmsRegistered = false;
@@ -104,19 +113,42 @@ test("student dashboard is responsive and keeps academic data scannable", async 
     registration: { creditUnitsSnapshot: 3, offering: { course: { code: "CSC201", title: "Data Structures and Algorithms" }, semester: {
       id: "semester", term: "FIRST", session: { id: "session", name: "2026/2027" },
     } } } };
+  const secondApprovedResult = { ...approvedResult, id: "result-web", caScore: 24, examScore: 48, totalScore: 72,
+    registration: { ...approvedResult.registration, creditUnitsSnapshot: 2, offering: { ...approvedResult.registration.offering,
+      course: { code: "CSC207", title: "Web Engineering" } } } };
+  let nextResultRequests = 0;
   await page.route("**/api/student/results?limit=20", async (route): Promise<void> => route.fulfill({ json: { statusCode: 200, message: "Approved results loaded.", payload: {
     items: [approvedResult], nextCursor: "next-result", summary: { attemptedUnits: 3, gradePoints: 15, gpa: 5 },
   } } }));
-  await page.route("**/api/student/results?limit=20&cursor=next-result", async (route): Promise<void> => route.fulfill({ status: 503, json: { statusCode: 503, code: "TEMPORARY_ERROR", message: "Results are temporarily unavailable." } }));
+  await page.route("**/api/student/results?limit=20&cursor=next-result", async (route): Promise<void> => {
+    nextResultRequests += 1;
+    if (nextResultRequests === 1) {
+      await route.fulfill({ status: 503, json: { statusCode: 503, code: "TEMPORARY_ERROR", message: "Results are temporarily unavailable." } });
+      return;
+    }
+    await route.fulfill({ json: { statusCode: 200, message: "Approved results loaded.", payload: {
+      items: [secondApprovedResult], nextCursor: null, summary: { attemptedUnits: 5, gradePoints: 25, gpa: 5 },
+    } } });
+  });
   await page.route("**/api/student/history?limit=20", async (route): Promise<void> => route.fulfill({ json: { statusCode: 200, message: "Academic history loaded.", payload: {
     items: [{ semester: approvedResult.registration.offering.semester, grades: [approvedResult], summary: { attemptedUnits: 3, gradePoints: 15, gpa: 5 } }],
     nextCursor: "next-semester", cumulative: { attemptedUnits: 3, gradePoints: 15, gpa: 5 },
   } } }));
+  await page.route("**/api/student/profile", async (route): Promise<void> => {
+    if (route.request().method() === "PATCH") {
+      const input = route.request().postDataJSON() as { phone: string | null; address: string | null };
+      profile.phone = input.phone;
+      profile.address = input.address;
+      await route.fulfill({ json: { statusCode: 200, message: "Student profile updated.", payload: profile } });
+      return;
+    }
+    await route.fulfill({ json: { statusCode: 200, message: "Student profile loaded.", payload: profile } });
+  });
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/student/dashboard");
   await expect(page.getByRole("heading", { name: "Welcome back, Okechukwu." })).toBeVisible();
-  await expect(page.getByText("Data Structures and Algorithms")).toBeVisible();
+  await expect(page.getByText("Data Structures and Algorithms", { exact: true })).toBeVisible();
   expect(await page.getByRole("complementary", { name: "Student navigation" }).evaluate((element): string => getComputedStyle(element).position)).toBe("fixed");
   expect(await page.evaluate((): boolean => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: ".impeccable/review/dashboard-desktop.png", fullPage: true });
@@ -131,39 +163,68 @@ test("student dashboard is responsive and keeps academic data scannable", async 
   await page.getByRole("link", { name: "Registered courses" }).click();
   await expect(page.getByRole("heading", { name: "Registered courses" })).toBeVisible();
   await page.screenshot({ path: ".impeccable/review/student-registrations-desktop.png", fullPage: true });
-  await page.getByRole("button", { name: "Withdraw" }).click();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByLabel("Printable course registration summary")).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Student navigation" })).toBeHidden();
+  await expect(page.getByText("Total registered units")).toBeVisible();
+  await expect(page.getByLabel("Printable course registration summary").getByText("Web Engineering")).toBeVisible();
+  await page.screenshot({ path: ".impeccable/review/student-registration-print.png", fullPage: true });
+  await page.emulateMedia({ media: "screen" });
+  await page.getByRole("button", { name: "Withdraw" }).first().click();
   await expect(page.getByRole("button", { name: "Withdrawing…" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "No registered courses" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Registered courses" }).getByText("Web Engineering", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Results" }).click();
   await expect(page).toHaveURL(/\/student\/results$/);
   await expect(page.getByRole("heading", { name: "Approved results" })).toBeVisible();
-  await expect(page.getByText("Data Structures and Algorithms")).toBeVisible();
-  await expect(page.getByText("5.00")).toBeVisible();
+  await expect(page.getByText("Data Structures and Algorithms", { exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Cumulative GPA" }).getByText("5.00")).toBeVisible();
   await page.getByRole("button", { name: "Load more results" }).click();
   await expect(page.getByText("Your loaded records are still available.", { exact: false })).toBeVisible();
-  await expect(page.getByText("Data Structures and Algorithms")).toBeVisible();
+  await expect(page.getByText("Data Structures and Algorithms", { exact: true })).toBeVisible();
   await page.goto("/student/results");
   await expect(page.getByRole("heading", { name: "Approved results" })).toBeVisible();
   await page.screenshot({ path: ".impeccable/review/student-results-desktop.png", fullPage: true });
+  await page.evaluate((): void => { window.print = (): void => { document.documentElement.dataset.printed = "true"; }; });
+  await page.getByRole("button", { name: "Print result statement" }).click();
+  await expect.poll(async (): Promise<string | undefined> => page.locator("html").getAttribute("data-printed").then((value) => value ?? undefined)).toBe("true");
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByLabel("Printable approved result statement")).toBeVisible();
+  await expect(page.getByText("This statement contains approved results only")).toBeVisible();
+  await expect(page.getByLabel("Printable approved result statement").getByText("Web Engineering")).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Student navigation" })).toBeHidden();
+  await page.screenshot({ path: ".impeccable/review/student-results-print.png", fullPage: true });
+  await page.emulateMedia({ media: "screen" });
   await page.getByRole("link", { name: "Academic history" }).click();
   await expect(page).toHaveURL(/\/student\/history$/);
   await expect(page.getByRole("heading", { name: "Academic history" })).toBeVisible();
-  await expect(page.getByText("First semester")).toBeVisible();
+  await expect(page.getByText("First semester", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Load more semesters" })).toBeVisible();
   await page.goto("/student/history");
   await expect(page.getByRole("heading", { name: "Academic history" })).toBeVisible();
   await page.screenshot({ path: ".impeccable/review/student-history-desktop.png", fullPage: true });
+  await page.getByRole("link", { name: "Student profile" }).click();
+  await expect(page).toHaveURL(/\/student\/profile$/);
+  await expect(page.getByText("UEMP/CSC/2026/001", { exact: true }).first()).toBeVisible();
+  await page.getByLabel("Phone number").fill("123");
+  await page.getByRole("button", { name: "Save contact details" }).click();
+  await expect(page.getByText("Enter at least 7 characters.")).toBeVisible();
+  await page.getByLabel("Phone number").fill("+234 800 000 0000");
+  await page.getByLabel("Current address").fill("University residence, Lagos");
+  await page.getByRole("button", { name: "Save contact details" }).click();
+  await expect(page.getByText("Contact details saved.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save contact details" })).toBeDisabled();
+  await page.screenshot({ path: ".impeccable/review/student-profile-desktop.png", fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/student/results");
-  await expect(page.getByRole("heading", { name: "Approved results" })).toBeVisible();
+  await page.goto("/student/profile");
+  await expect(page.getByRole("heading", { name: "Student profile" })).toBeVisible();
   await page.getByRole("button", { name: "Open navigation" }).click();
   await expect(page.getByRole("dialog", { name: "Student navigation" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Close navigation" })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Open navigation" })).toBeFocused();
   expect(await page.evaluate((): boolean => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.screenshot({ path: ".impeccable/review/student-results-mobile.png", fullPage: true });
+  await page.screenshot({ path: ".impeccable/review/student-profile-mobile.png", fullPage: true });
 });
 
 test("admin dashboard publishes academic records and adapts to mobile", async ({ page }): Promise<void> => {
@@ -190,7 +251,22 @@ test("admin dashboard publishes academic records and adapts to mobile", async ({
   ] } } }));
   await page.route("**/api/admin/result-batches/batch-2", async (route): Promise<void> => route.fulfill({ json: { payload: { ...secondBatch, reviewer: null, reviewedAt: null, results: [] } } }));
   let approved = false;
+  const users: AdminUser[] = [{ id: "admin-user", name: "Demo Administrator", email: "admin@example.test", role: "ADMIN", status: "ACTIVE", createdAt: "2026-11-11T08:00:00.000Z", student: null, lecturer: null, _count: { sessions: 1 } }];
   await page.route("**/api/admin/result-batches/batch/approve", async (route): Promise<void> => { approved = true; await route.fulfill({ json: { payload: { id: "batch", status: "APPROVED", reviewedAt: "2026-11-11T12:00:00.000Z", feedback: null } } }); });
+  await page.route("**/api/admin/users**", async (route): Promise<void> => {
+    const url = new URL(route.request().url()); const method = route.request().method(); const path = url.pathname;
+    if (method === "GET") { await route.fulfill({ json: { payload: { items: users, nextCursor: null, currentUserId: "admin-user" } } }); return; }
+    if (method === "POST") {
+      const input = route.request().postDataJSON() as AdminUserInput;
+      const created = { id: "new-student", name: input.name, email: input.email, role: input.role, status: "ACTIVE", createdAt: "2026-11-11T12:00:00.000Z",
+        student: { matricNumber: input.matricNumber, level: input.level, program: { id: input.programId, code: "BSC-CS", name: "Computer Science" } }, lecturer: null, _count: { sessions: 0 } } satisfies AdminUser;
+      users.push(created); await route.fulfill({ json: { payload: created } }); return;
+    }
+    const target = users.find((item) => path.includes(item.id))!;
+    if (method === "PATCH" && path.endsWith("/password")) { target._count.sessions = 0; await route.fulfill({ json: { payload: { revokedSessions: 1 } } }); return; }
+    if (method === "PATCH") { target.status = (route.request().postDataJSON() as { status: AdminUser["status"] }).status; target._count.sessions = 0; await route.fulfill({ json: { payload: target } }); return; }
+    target._count.sessions = 0; await route.fulfill({ json: { payload: { revokedSessions: 1 } } });
+  });
 
   await page.setViewportSize({ width: 1440, height: 1000 }); await page.goto("/admin/dashboard");
   const loading = page.locator(".adminLoading"); await expect(loading).toContainText("Loading administration workspace…");
@@ -207,15 +283,25 @@ test("admin dashboard publishes academic records and adapts to mobile", async ({
   await expect(page.getByRole("heading", { name: "CSC203 result sheet" })).toBeVisible(); await expect(page.getByLabel("Rejection feedback")).toHaveValue("");
   await page.getByRole("button", { name: /CSC201 Data Structures/ }).click();
   await page.getByRole("button", { name: "Approve results" }).click(); await expect.poll((): boolean => approved).toBe(true);
+  await page.getByRole("link", { name: "User management" }).click(); await expect(page).toHaveURL(/\/admin\/users$/);
+  const createUser = page.locator(".adminUserCreate"); await createUser.getByLabel("Full name").fill("New Student"); await createUser.getByLabel("Email address").fill("new.student@example.test"); await createUser.getByLabel("Initial password").fill("A secure temporary password");
+  await createUser.getByLabel("Programme").selectOption("program"); await createUser.getByLabel("Matriculation number").fill("UEMP/CSC/2026/009"); await createUser.getByLabel("Academic level").selectOption("200");
+  await createUser.getByRole("button", { name: "Create user account" }).click(); await expect(page.getByText("User account and academic assignment created.")).toBeVisible();
+  const currentAdminRow = page.getByRole("article").filter({ hasText: "admin@example.test" }); await expect(currentAdminRow.getByText("Current account")).toBeVisible(); await expect(currentAdminRow.getByRole("button", { name: "Suspend" })).toHaveCount(0);
+  const studentRow = page.getByRole("article").filter({ hasText: "new.student@example.test" }); await expect(studentRow).toContainText("BSC-CS · Level 200");
+  await studentRow.getByRole("button", { name: "Suspend" }).click(); await expect(studentRow).toContainText("suspended");
+  await studentRow.getByRole("button", { name: "Activate" }).click(); await studentRow.getByRole("button", { name: "Deactivate" }).click(); await expect(studentRow).toContainText("inactive");
+  await studentRow.getByRole("button", { name: "Reset password" }).click(); await page.getByLabel("New password").fill("A replacement password"); await page.getByRole("button", { name: "Reset password", exact: true }).last().click();
+  await expect(page.getByText("Password reset and sessions revoked.")).toBeVisible();
   expect(await page.evaluate((): boolean => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: ".impeccable/review/admin-results-desktop.png", fullPage: true });
+  await page.screenshot({ path: ".impeccable/review/admin-users-desktop.png", fullPage: true });
 
   await page.setViewportSize({ width: 390, height: 844 }); await page.reload();
   await page.getByRole("button", { name: "Open navigation" }).click(); await expect(page.getByRole("dialog", { name: "Administration navigation" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Close navigation" })).toBeFocused();
   await expect.poll(async (): Promise<number> => page.getByRole("dialog", { name: "Administration navigation" }).evaluate((element): number => element.getBoundingClientRect().left)).toBe(0);
   expect(await page.evaluate((): boolean => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.screenshot({ path: ".impeccable/review/admin-results-mobile.png", fullPage: true });
+  await page.screenshot({ path: ".impeccable/review/admin-users-mobile.png", fullPage: true });
   await page.keyboard.press("Escape"); await expect(page.getByRole("button", { name: "Open navigation" })).toBeFocused();
 });
 
@@ -247,6 +333,8 @@ test("lecturer dashboard saves a result draft and remains usable on mobile", asy
   await expect(page.getByText("Results submitted for administrator approval.")).toBeVisible(); expect(savedPayload).toEqual({ results: [
     { registrationId: "registration-1", caScore: 26, examScore: 50 }, { registrationId: "registration-2", caScore: 18, examScore: 35 },
   ] });
+  await page.getByRole("link", { name: "Assigned courses" }).click(); await expect(page).toHaveURL(/\/lecturer\/courses$/);
+  await page.getByRole("link", { name: "Result entry" }).click(); await expect(page).toHaveURL(/\/lecturer\/results$/);
   expect(await page.evaluate((): boolean => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: ".impeccable/review/lecturer-dashboard-desktop.png", fullPage: true });
 

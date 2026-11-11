@@ -22,6 +22,7 @@ const paths = {
   calendar: "M7 2v4m10-4v4M3 9h18M5 4h14a2 2 0 0 1 2 2v15H3V6a2 2 0 0 1 2-2Z",
   graduation: "m2 9 10-5 10 5-10 5L2 9Zm4 3v5c3 2 9 2 12 0v-5m4-3v7",
   clock: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-15v6l4 2",
+  print: "M6 9V3h12v6M6 17H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M6 14h12v7H6v-7Zm12-2h.01",
 } as const;
 
 export function Icon({

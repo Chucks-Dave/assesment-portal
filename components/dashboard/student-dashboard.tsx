@@ -49,8 +49,36 @@ const navigation = [
   { label: "Registered courses", icon: "layers", href: "/student/registrations" },
   { label: "Results", icon: "chart", href: "/student/results" },
   { label: "Academic history", icon: "history", href: "/student/history" },
-  { label: "Student profile", icon: "user", href: "/student/dashboard#profile" },
+  { label: "Student profile", icon: "user", href: "/student/profile" },
 ] as const;
+
+function termLabel(term: "FIRST" | "SECOND"): string {
+  return term === "FIRST" ? "First semester" : "Second semester";
+}
+
+function PrintButton({ label }: { label: string }): ReactElement {
+  return <button className="printButton screenOnly" type="button" onClick={(): void => window.print()}><Icon name="print" />{label}</button>;
+}
+
+function RegistrationPrintout({ dashboard, registrations }: {
+  dashboard: StudentDashboard; registrations: StudentRegistration[];
+}): ReactElement {
+  const semester = dashboard.activeSemester;
+  const totalUnits = registrations.reduce((sum, item) => sum + item.creditUnitsSnapshot, 0);
+  return <section className="printOnly printDocument" aria-label="Printable course registration summary">
+    <header className="printBrand"><div><Icon name="book" /><strong>UEMP</strong></div><p>University Education Management Portal</p></header>
+    <div className="printTitle"><h1>Course registration summary</h1><p>Student copy · Generated {new Date().toLocaleDateString()}</p></div>
+    <dl className="printIdentity">
+      <div><dt>Student</dt><dd>{dashboard.student.user.name}</dd></div><div><dt>Matriculation number</dt><dd>{dashboard.student.matricNumber}</dd></div>
+      <div><dt>Programme</dt><dd>{dashboard.student.program.name}</dd></div><div><dt>Level</dt><dd>{dashboard.student.level}</dd></div>
+      <div><dt>Academic session</dt><dd>{semester?.session.name ?? "Not available"}</dd></div><div><dt>Semester</dt><dd>{semester ? termLabel(semester.term) : "Not available"}</dd></div>
+    </dl>
+    <table className="printTable"><thead><tr><th>Course code</th><th>Course title</th><th>Units</th></tr></thead><tbody>
+      {registrations.map((item) => <tr key={item.id}><td>{item.offering.course.code}</td><td>{item.offering.course.title}</td><td>{item.creditUnitsSnapshot}</td></tr>)}
+    </tbody><tfoot><tr><th colSpan={2}>Total registered units</th><td>{totalUnits}</td></tr></tfoot></table>
+    <p className="printDisclaimer">This portal summary is for the student’s records and is not a certified university document.</p>
+  </section>;
+}
 
 function Brand(): ReactElement {
   return <Link className={styles.brand} href="/" aria-label="UEMP home">
@@ -259,7 +287,9 @@ export function StudentCoursesScreen({ view }: { view: "available" | "registered
   const mutationError = register.error ?? withdraw.error;
   return <StudentPortalFrame name={dashboard.data.student.user.name} activeHref={view === "available" ? "/student/courses" : "/student/registrations"}>
     <main className={`${styles.main} ${styles.coursePage}`} id="main-content">
-      <header className={styles.coursePageHeader}><div><h1>{view === "available" ? "Course registration" : "Registered courses"}</h1><p>{view === "available" ? "Choose the courses you will take this semester." : "Review the courses currently on your semester record."}</p></div><div className={styles.statusSummary}><span className={registrationOpen ? styles.statusOpen : styles.statusClosed}>{registrationOpen ? "Registration open" : "Registration closed"}</span><p>Registered load <strong>{dashboard.data.registeredUnits} units</strong></p></div></header>
+      <div className="screenOnly">
+        <header className={styles.coursePageHeader}><div><h1>{view === "available" ? "Course registration" : "Registered courses"}</h1><p>{view === "available" ? "Choose the courses you will take this semester." : "Review the courses currently on your semester record."}</p></div><div className={styles.statusSummary}><span className={registrationOpen ? styles.statusOpen : styles.statusClosed}>{registrationOpen ? "Registration open" : "Registration closed"}</span><p>Registered load <strong>{dashboard.data.registeredUnits} units</strong></p>{view === "registered" && (registrations.data?.length ?? 0) > 0 && <PrintButton label="Print registration summary" />}</div></header>
+      </div>
       {mutationError && <p className={styles.formError} role="alert">{apiErrorMessage(mutationError)}</p>}
       {view === "available" ? <>
         <div className={styles.selectionBar}><div><strong>{selected.length}</strong><span> courses selected</span><b>{selectedUnits} units</b></div><button className="button button-green" disabled={!registrationOpen || selected.length === 0 || register.isPending} onClick={(): void => register.mutate(selected)}>{register.isPending ? "Registering…" : "Register selected courses"}</button></div>
@@ -272,6 +302,7 @@ export function StudentCoursesScreen({ view }: { view: "available" | "registered
         <div className={`${styles.courseTableHeader} ${styles.registeredCourse}`}><span>Code</span><span>Course</span><span>Units</span><span>Action</span></div>
         {(registrations.data ?? []).length === 0 ? <div className={styles.emptyState}><Icon name="layers" /><h2>No registered courses</h2><p>Go to course registration to choose from your eligible semester courses.</p><Link className="button button-green" href="/student/courses">Choose courses</Link></div> : registrations.data?.map((item) => { const withdrawing = withdraw.isPending && withdraw.variables === item.id; return <article className={`${styles.courseChoice} ${styles.registeredCourse}`} key={item.id}><span className={styles.courseCode}>{item.offering.course.code}</span><span><strong>{item.offering.course.title}</strong><small>Registered {new Date(item.registeredAt).toLocaleDateString()}</small></span><span className={styles.courseMeta}>{item.creditUnitsSnapshot} {item.creditUnitsSnapshot === 1 ? "unit" : "units"}</span><button className={styles.textButton} aria-busy={withdrawing} disabled={!registrationOpen || withdraw.isPending} onClick={(): void => withdraw.mutate(item.id)}>{withdrawing ? "Withdrawing…" : "Withdraw"}</button></article>; })}
       </section>}
+      {view === "registered" && registrations.data && registrations.data.length > 0 && <RegistrationPrintout dashboard={dashboard.data} registrations={registrations.data} />}
     </main>
   </StudentPortalFrame>;
 }

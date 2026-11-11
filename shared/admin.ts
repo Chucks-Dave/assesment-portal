@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { ResultBatchStatus, SemesterTerm } from "@/generated/prisma/enums";
+import { ResultBatchStatus, SemesterTerm, UserRole, UserStatus } from "@/generated/prisma/enums";
+import { AUTH } from "@/server/auth/constants";
 
 const departmentSchema = z.object({ id: z.string(), code: z.string(), name: z.string() });
 const courseSchema = z.object({ id: z.string(), code: z.string(), title: z.string(), defaultCreditUnits: z.number().int().min(1).max(12), department: departmentSchema });
@@ -36,6 +37,24 @@ export const resultBatchDetailResponseSchema = z.object({ payload: resultBatchSu
   results: z.array(z.object({ id: z.string(), caScore: z.number(), examScore: z.number(), totalScore: z.number(), grade: z.string(), gradePoint: z.number().int(),
     registration: z.object({ id: z.string(), student: z.object({ matricNumber: z.string(), user: z.object({ name: z.string() }) }) }) })) }) });
 export const resultRejectionInputSchema = z.object({ feedback: z.string().trim().min(10, "Explain the required correction.").max(500) });
+const adminUserSchema = z.object({
+  id: z.string(), name: z.string(), email: z.email(), role: z.enum(UserRole), status: z.enum(UserStatus), createdAt: z.iso.datetime(),
+  student: z.object({ matricNumber: z.string(), level: z.number().int(), program: z.object({ id: z.string(), code: z.string(), name: z.string() }) }).nullable(),
+  lecturer: z.object({ department: departmentSchema }).nullable(),
+  _count: z.object({ sessions: z.number().int() }),
+});
+export const adminUsersResponseSchema = z.object({ payload: z.object({ items: z.array(adminUserSchema), nextCursor: z.string().nullable(), currentUserId: z.string() }) });
+export const adminUserResponseSchema = z.object({ payload: adminUserSchema });
+export const adminUserInputSchema = z.object({
+  name: z.string().trim().min(2, "Enter the account holder’s name.").max(120),
+  email: z.string().trim().toLowerCase().max(254).pipe(z.email("Enter a valid email address.")),
+  password: z.string().min(AUTH.passwordMinLength, `Use at least ${AUTH.passwordMinLength} characters.`).max(AUTH.passwordMaxLength),
+  role: z.enum(UserRole), programId: z.string(), matricNumber: z.string(), level: z.number().int(), departmentId: z.string(),
+}).superRefine((input, context) => {
+  if (input.role === UserRole.STUDENT && (!input.programId || !input.matricNumber || !input.level)) context.addIssue({ code: "custom", message: "Complete the student academic assignment." });
+  if (input.role === UserRole.LECTURER && !input.departmentId) context.addIssue({ code: "custom", message: "Select the lecturer’s department." });
+});
+export const adminUserPasswordInputSchema = z.object({ password: z.string().min(AUTH.passwordMinLength, `Use at least ${AUTH.passwordMinLength} characters.`).max(AUTH.passwordMaxLength) });
 
 export type AdminDashboard = z.infer<typeof adminDashboardResponseSchema>["payload"];
 export type AdminOptions = z.infer<typeof adminOptionsResponseSchema>["payload"];
@@ -44,3 +63,7 @@ export type OfferingInput = z.infer<typeof offeringInputSchema>;
 export type ResultBatchSummary = z.infer<typeof resultBatchSummarySchema>;
 export type ResultBatchDetail = z.infer<typeof resultBatchDetailResponseSchema>["payload"];
 export type ResultRejectionInput = z.infer<typeof resultRejectionInputSchema>;
+export type AdminUser = z.infer<typeof adminUserSchema>;
+export type AdminUserPage = z.infer<typeof adminUsersResponseSchema>["payload"];
+export type AdminUserInput = z.infer<typeof adminUserInputSchema>;
+export type AdminUserPasswordInput = z.infer<typeof adminUserPasswordInputSchema>;

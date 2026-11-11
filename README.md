@@ -31,9 +31,11 @@ After provisioning the three local demonstration accounts in `.env.demo-accounts
 
 Use fictitious demonstration credentials. Keep passwords out of committed files and command arguments. Never expose a public provisioning/reset endpoint.
 
+The authenticated Student workspace covers dashboard context, profile maintenance, eligible-course registration, persisted registrations, approved results, academic history, and browser-printable registration and result statements. Printing hides portal navigation and controls; generated summaries are student copies rather than certified transcripts.
+
 ## Administration
 
-Administrators are taken directly to `/admin/dashboard` after login. The first administration phase provides institution counts, recent offering activity, catalogue-course creation, and semester-offering publication. Programme and lecturer choices are constrained to the selected course department. See [the admin academic API contract](docs/admin-api.md) for routes, validation, pagination, and audit behavior.
+Administrators are taken directly to `/admin/dashboard` after login. Administration provides institution counts, recent offering activity, catalogue-course creation, semester-offering publication, result approval, and user-account management. Administrators can create role-aware accounts with the required Student or Lecturer academic assignment, search and filter accounts, suspend or reactivate access, revoke sessions, and reset another user’s password. Established roles are immutable so academic history is not detached from its institutional identity. See [the admin academic API contract](docs/admin-api.md) for routes, validation, pagination, and audit behavior.
 
 ## Lecturer results
 
@@ -55,12 +57,14 @@ Tests start an isolated PostgreSQL-compatible PGlite instance over a loopback so
 
 Import `prisma` from `@/server/db` only in Node.js server modules. Generated Prisma files are excluded from version control and linting; regenerate them after schema changes.
 
+Architecture, the ER diagram, role permissions, grading assumptions, and delivery limitations are documented in [docs/architecture.md](docs/architecture.md). The requirement-to-implementation checklist is in [docs/requirements-checklist.md](docs/requirements-checklist.md).
+
 ## Frontend
 
-The public landing page at `/` adapts the approved school-site reference into UEMP's red/green identity. `/login` provides a working frontend for all three account roles. Academic services shown on the landing page describe the planned student workflow; the authenticated academic workspace is still to be implemented.
+The public landing page at `/` adapts the approved school-site reference into UEMP's red/green identity. `/login` serves all three account roles and redirects each active session to its authorized workspace. The Student workspace provides the complete assessed workflow; supporting Administrator and Lecturer workspaces manage courses, offerings, result entry, and result approval.
 
 Browser requests use the shared Axios client in `lib/http-client.ts`. TanStack Query handles session reads and authentication mutations inside a login-scoped provider. React Hook Form and the shared Zod login schema provide form validation. Passwords and tokens are never persisted in browser storage; session changes cancel pending queries and discard the previous account's other cached data while preserving the current-session observer.
 
-Run `npm run test:e2e` with a preview running at `http://localhost:3000`, or set `PLAYWRIGHT_BASE_URL` to another local preview URL. These three Chrome checks cover responsive overflow, keyboard navigation, linked guides, frontend validation, login/logout UI, and error handling. Browser auth responses are mocked; the separate Vitest integration suite verifies real database-backed authentication.
+Run `npm run test:e2e` with a preview running at `http://localhost:3000`, or set `PLAYWRIGHT_BASE_URL` to another local preview URL. Browser checks cover responsive layouts, keyboard navigation, registration, profile updates, approved results, printable statements, role workspaces, authentication UI, and error handling. Browser API responses are mocked; the Vitest integration suite verifies real database-backed authorization and persistence.
 
 The design system is captured in `DESIGN.md` and `.impeccable/design.json`. The Figma file could not be read through the tools available in this session, so the supplied screenshot and confirmed adaptation guided implementation. Photography in `public/images` is illustrative stock from Pexels and Unsplash; source origins are embedded in the files and are not claims about a particular university.

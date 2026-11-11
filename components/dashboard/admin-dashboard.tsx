@@ -6,15 +6,16 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactElement, type RefObject } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { UserRole, UserStatus } from "@/generated/prisma/enums";
 import { Icon } from "@/components/ui/icon";
 import { signOut } from "@/features/auth/api";
 import { replaceSession } from "@/features/auth/session-cache";
-import { ADMIN_DASHBOARD_QUERY_KEY, ADMIN_OPTIONS_QUERY_KEY, ADMIN_RESULT_BATCHES_QUERY_KEY, approveResultBatch, createCourse, createOffering, getAdminDashboard, getAdminOptions, getResultBatch, getSubmittedResultBatches, rejectResultBatch } from "@/features/admin/api";
+import { ADMIN_DASHBOARD_QUERY_KEY, ADMIN_OPTIONS_QUERY_KEY, ADMIN_RESULT_BATCHES_QUERY_KEY, ADMIN_USERS_QUERY_KEY, approveResultBatch, createAdminUser, createCourse, createOffering, getAdminDashboard, getAdminOptions, getAdminUsers, getResultBatch, getSubmittedResultBatches, rejectResultBatch, resetAdminUserPassword, revokeAdminUserSessions, updateAdminUserStatus } from "@/features/admin/api";
 import { apiErrorMessage } from "@/lib/http-client";
-import { courseInputSchema, offeringInputSchema, resultRejectionInputSchema, type AdminDashboard, type AdminOptions, type CourseInput, type OfferingInput, type ResultRejectionInput } from "@/shared/admin";
+import { adminUserInputSchema, adminUserPasswordInputSchema, courseInputSchema, offeringInputSchema, resultRejectionInputSchema, type AdminDashboard, type AdminOptions, type AdminUser, type AdminUserInput, type AdminUserPasswordInput, type CourseInput, type OfferingInput, type ResultRejectionInput } from "@/shared/admin";
 
-export type AdminView = "dashboard" | "courses" | "offerings" | "results";
+export type AdminView = "dashboard" | "courses" | "offerings" | "results" | "users";
 
 function FieldError({ id, message }: { id: string; message?: string }): ReactElement | null {
   return message ? <span className="adminFieldError" id={id} role="alert">{message}</span> : null;
@@ -25,8 +26,7 @@ function Sidebar({ open, close, closeRef, sidebarRef, view }: { open: boolean; c
     <button className={`adminScrim ${open ? "adminScrimOpen" : ""}`} onClick={close} aria-hidden="true" tabIndex={-1} />
     <aside ref={sidebarRef} className={`adminSidebar ${open ? "adminSidebarOpen" : ""}`} id="admin-navigation" aria-label="Administration navigation" role={open ? "dialog" : undefined} aria-modal={open || undefined}>
       <div className="adminSidebarHead"><Link className="adminBrand" href="/"><span><Icon name="book" /></span>UEMP</Link><button ref={closeRef} className="adminClose" onClick={close} aria-label="Close navigation"><Icon name="close" /></button></div>
-      <nav className="adminNav"><p>Administration</p><Link className={view === "dashboard" ? "adminActiveNav" : ""} href="/admin/dashboard" onClick={close}><Icon name="grid" />Overview</Link><Link className={view === "courses" ? "adminActiveNav" : ""} href="/admin/courses" onClick={close}><Icon name="book" />Course catalogue</Link><Link className={view === "offerings" ? "adminActiveNav" : ""} href="/admin/offerings" onClick={close}><Icon name="layers" />Semester offerings</Link><Link className={view === "results" ? "adminActiveNav" : ""} href="/admin/results" onClick={close}><Icon name="check" />Result approval</Link><p>Next phase</p><span><Icon name="user" />User management</span></nav>
-      <p className="adminSidebarNote">Changes to academic records are logged against your administrator account.</p>
+      <nav className="adminNav"><p>Administration</p><Link className={view === "dashboard" ? "adminActiveNav" : ""} href="/admin/dashboard" onClick={close}><Icon name="grid" />Overview</Link><Link className={view === "courses" ? "adminActiveNav" : ""} href="/admin/courses" onClick={close}><Icon name="book" />Course catalogue</Link><Link className={view === "offerings" ? "adminActiveNav" : ""} href="/admin/offerings" onClick={close}><Icon name="layers" />Semester offerings</Link><Link className={view === "results" ? "adminActiveNav" : ""} href="/admin/results" onClick={close}><Icon name="check" />Result approval</Link><Link className={view === "users" ? "adminActiveNav" : ""} href="/admin/users" onClick={close}><Icon name="user" />User management</Link></nav>
     </aside>
   </>;
 }
@@ -109,11 +109,77 @@ function ResultApproval(): ReactElement {
     </>}</section></div>;
 }
 
+function UserCreateForm({ options }: { options: AdminOptions }): ReactElement {
+  const client = useQueryClient();
+  const form = useForm<AdminUserInput>({ resolver: zodResolver(adminUserInputSchema), defaultValues: {
+    name: "", email: "", password: "", role: UserRole.STUDENT, programId: "", matricNumber: "", level: 100, departmentId: "",
+  } });
+  const role = useWatch({ control: form.control, name: "role" });
+  const mutation = useMutation({ mutationFn: createAdminUser, onSuccess: async (): Promise<void> => {
+    form.reset(); await Promise.all([client.invalidateQueries({ queryKey: ADMIN_USERS_QUERY_KEY }), client.invalidateQueries({ queryKey: ADMIN_DASHBOARD_QUERY_KEY }), client.invalidateQueries({ queryKey: ADMIN_OPTIONS_QUERY_KEY })]);
+  } });
+  return <section className="adminPanel adminUserCreate"><div className="adminPanelHead"><span><Icon name="user" /></span><div><h2>Create a user account</h2></div></div>
+    <form onSubmit={form.handleSubmit((input): void => mutation.mutate(input))} noValidate>
+      <label>Account type<select {...form.register("role")}><option value={UserRole.STUDENT}>Student</option><option value={UserRole.LECTURER}>Lecturer</option><option value={UserRole.ADMIN}>Administrator</option></select></label>
+      <div className="adminFormRow"><label>Full name<input autoComplete="name" placeholder="Ada Mensah" aria-invalid={!!form.formState.errors.name} {...form.register("name")} /><FieldError id="user-name-error" message={form.formState.errors.name?.message} /></label><label>Email address<input type="email" autoComplete="off" placeholder="ada@university.edu" aria-invalid={!!form.formState.errors.email} {...form.register("email")} /><FieldError id="user-email-error" message={form.formState.errors.email?.message} /></label></div>
+      <label>Initial password<input type="password" autoComplete="new-password" placeholder="At least 12 characters" aria-invalid={!!form.formState.errors.password} {...form.register("password")} /><FieldError id="user-password-error" message={form.formState.errors.password?.message} /></label>
+      {role === UserRole.STUDENT && <><label>Programme<select aria-invalid={!!form.formState.errors.programId} {...form.register("programId")}><option value="">Select programme</option>{options.programs.map((program) => <option key={program.id} value={program.id}>{program.code} · {program.name}</option>)}</select></label><div className="adminFormRow"><label>Matriculation number<input autoCapitalize="characters" placeholder="UEMP/CSC/2026/001" aria-invalid={!!form.formState.errors.matricNumber} {...form.register("matricNumber")} /></label><label>Academic level<select {...form.register("level", { valueAsNumber: true })}>{[100,200,300,400,500,600].map((level) => <option key={level}>{level}</option>)}</select></label></div></>}
+      {role === UserRole.LECTURER && <label>Department<select aria-invalid={!!form.formState.errors.departmentId} {...form.register("departmentId")}><option value="">Select department</option>{options.departments.map((department) => <option key={department.id} value={department.id}>{department.code} · {department.name}</option>)}</select></label>}
+      {form.formState.errors.root?.message && <p className="adminFormError" role="alert">{form.formState.errors.root.message}</p>}
+      {mutation.isError && <p className="adminFormError" role="alert">{apiErrorMessage(mutation.error)}</p>}
+      {mutation.isSuccess && <p className="adminFormSuccess" role="status">User account and academic assignment created.</p>}
+      <button className="button button-green" disabled={mutation.isPending}>{mutation.isPending ? "Creating account…" : "Create user account"}<Icon name="arrow" /></button>
+    </form>
+  </section>;
+}
+
+function UserRow({ user, currentUserId, selectPasswordReset }: { user: AdminUser; currentUserId: string; selectPasswordReset: (user: AdminUser) => void }): ReactElement {
+  const client = useQueryClient();
+  const refresh = async (): Promise<void> => { await client.invalidateQueries({ queryKey: ADMIN_USERS_QUERY_KEY }); };
+  const status = useMutation({ mutationFn: updateAdminUserStatus, onSuccess: refresh });
+  const sessions = useMutation({ mutationFn: revokeAdminUserSessions, onSuccess: refresh });
+  const isCurrentUser = user.id === currentUserId;
+  const assignment = user.student ? `${user.student.program.code} · Level ${user.student.level} · ${user.student.matricNumber}`
+    : user.lecturer ? user.lecturer.department.name : "Administration";
+  return <article className="adminUserRow">
+    <div className="adminUserIdentity"><strong>{user.name}</strong><span>{user.email}</span><small>{assignment}</small></div>
+    <span className="adminRoleTag">{user.role === UserRole.ADMIN ? "Administrator" : user.role === UserRole.LECTURER ? "Lecturer" : "Student"}</span>
+    <span className={`adminAccountStatus adminAccountStatus${user.status}`}>{user.status.toLowerCase()}</span>
+    <span className="adminSessionCount">{user._count.sessions} active {user._count.sessions === 1 ? "session" : "sessions"}</span>
+    <div className="adminUserActions">{isCurrentUser ? <span className="adminCurrentAccount">Current account</span> : <>{user.status === UserStatus.ACTIVE ? <><button disabled={status.isPending} onClick={(): void => status.mutate({ userId: user.id, status: UserStatus.SUSPENDED })}>Suspend</button><button disabled={status.isPending} onClick={(): void => status.mutate({ userId: user.id, status: UserStatus.INACTIVE })}>Deactivate</button></> : <button disabled={status.isPending} onClick={(): void => status.mutate({ userId: user.id, status: UserStatus.ACTIVE })}>Activate</button>}<button disabled={sessions.isPending || user._count.sessions === 0} onClick={(): void => sessions.mutate(user.id)}>{sessions.isPending ? "Revoking…" : "Revoke sessions"}</button><button onClick={(): void => selectPasswordReset(user)}>Reset password</button></>}</div>
+    {(status.error || sessions.error) && <p className="adminUserError" role="alert">{apiErrorMessage(status.error ?? sessions.error)}</p>}
+  </article>;
+}
+
+function PasswordReset({ user, close }: { user: AdminUser; close: () => void }): ReactElement {
+  const client = useQueryClient();
+  const form = useForm<AdminUserPasswordInput>({ resolver: zodResolver(adminUserPasswordInputSchema), defaultValues: { password: "" } });
+  const mutation = useMutation({ mutationFn: (input: AdminUserPasswordInput) => resetAdminUserPassword({ userId: user.id, ...input }), onSuccess: async (): Promise<void> => {
+    form.reset(); await client.invalidateQueries({ queryKey: ADMIN_USERS_QUERY_KEY });
+  } });
+  return <section className="adminPasswordReset" aria-labelledby="password-reset-title"><div><h2 id="password-reset-title">Reset {user.name}’s password</h2><p>This immediately revokes every active session for the account.</p></div><form onSubmit={form.handleSubmit((input): void => mutation.mutate(input))} noValidate><label>New password<input type="password" autoComplete="new-password" aria-invalid={!!form.formState.errors.password} {...form.register("password")} /><FieldError id="reset-password-error" message={form.formState.errors.password?.message} /></label>{mutation.isError && <p className="adminFormError" role="alert">{apiErrorMessage(mutation.error)}</p>}{mutation.isSuccess && <p className="adminFormSuccess" role="status">Password reset and sessions revoked.</p>}<div><button className="button adminRejectButton" type="button" onClick={close}>Close</button><button className="button button-green" disabled={mutation.isPending}>{mutation.isPending ? "Resetting…" : "Reset password"}</button></div></form></section>;
+}
+
+function UserManagement({ options }: { options: AdminOptions }): ReactElement {
+  const [draftSearch, setDraftSearch] = useState("");
+  const [filters, setFilters] = useState<{ search: string; role: UserRole | ""; status: UserStatus | "" }>({ search: "", role: "", status: "" });
+  const [passwordUser, setPasswordUser] = useState<AdminUser | null>(null);
+  const users = useInfiniteQuery({ queryKey: [...ADMIN_USERS_QUERY_KEY, filters], queryFn: ({ pageParam, signal }) => getAdminUsers(filters, pageParam, signal), initialPageParam: null as string | null, getNextPageParam: (page) => page.nextCursor });
+  const items = users.data?.pages.flatMap((page) => page.items) ?? [];
+  const currentUserId = users.data?.pages[0].currentUserId;
+  return <><div className="adminUsersGrid"><UserCreateForm options={options} /><section className="adminUserDirectory" aria-labelledby="user-directory-title"><div className="adminSectionHead"><div><h2 id="user-directory-title">User directory</h2><p>{items.length} accounts loaded</p></div></div>
+    <div className="adminUserFilters"><label><span>Search accounts</span><input value={draftSearch} onChange={(event): void => setDraftSearch(event.target.value)} placeholder="Name, email, or matric number" /></label><label><span>Role</span><select value={filters.role} onChange={(event): void => setFilters((current) => ({ ...current, role: event.target.value as UserRole | "" }))}><option value="">All roles</option><option value={UserRole.STUDENT}>Students</option><option value={UserRole.LECTURER}>Lecturers</option><option value={UserRole.ADMIN}>Administrators</option></select></label><label><span>Status</span><select value={filters.status} onChange={(event): void => setFilters((current) => ({ ...current, status: event.target.value as UserStatus | "" }))}><option value="">All statuses</option><option value={UserStatus.ACTIVE}>Active</option><option value={UserStatus.SUSPENDED}>Suspended</option><option value={UserStatus.INACTIVE}>Inactive</option></select></label><button className="button button-green" onClick={(): void => setFilters((current) => ({ ...current, search: draftSearch.trim() }))}>Search</button></div>
+    {users.isPending ? <div className="adminInlineLoading" role="status">Loading user accounts…</div> : users.error || !currentUserId ? <p className="adminFormError" role="alert">{apiErrorMessage(users.error)}</p> : items.length === 0 ? <div className="adminEmpty"><Icon name="user" /><h3>No matching accounts</h3><p>Adjust the filters or create a new user account.</p></div> : <div className="adminUserList">{items.map((user) => <UserRow key={user.id} user={user} currentUserId={currentUserId} selectPasswordReset={setPasswordUser} />)}</div>}
+    {users.hasNextPage && <button className="resultsLoadMore" disabled={users.isFetchingNextPage} onClick={(): void => { void users.fetchNextPage(); }}>{users.isFetchingNextPage ? "Loading…" : "Load more accounts"}</button>}
+  </section></div>{passwordUser && <PasswordReset user={passwordUser} close={(): void => setPasswordUser(null)} />}</>;
+}
+
 const pageCopy = {
   dashboard: { title: "Manage the course cycle.", description: "Review institutional activity and move into a focused administration workspace." },
   courses: { title: "Course catalogue.", description: "Create and review the department-owned courses used across programmes." },
   offerings: { title: "Semester offerings.", description: "Publish catalogue courses for a programme, level, semester, and lecturer." },
   results: { title: "Result approval.", description: "Review submitted lecturer batches before results become visible to students." },
+  users: { title: "User management.", description: "Create role-aware accounts, maintain access status, and protect active sessions." },
 } as const;
 
 export function AdminDashboardScreen({ view = "dashboard" }: { view?: AdminView }): ReactElement {
@@ -144,6 +210,6 @@ export function AdminDashboardScreen({ view = "dashboard" }: { view?: AdminView 
     <header className="adminTopbar"><button ref={menuButton} className="adminMenu" onClick={(): void => setNavOpen(true)} aria-label="Open navigation" aria-controls="admin-navigation" aria-expanded={navOpen}><Icon name="menu" /></button><div><Icon name="grid" />Administration portal</div><button className="adminSignOut" onClick={(): void => logout.mutate()} disabled={logout.isPending}><Icon name="logout" />{logout.isPending ? "Signing out…" : "Sign out"}</button></header>
     {logout.isError && <p className="adminLogoutError" role="alert">{apiErrorMessage(logout.error)}</p>}
     <main className="adminMain" id="admin-main"><div className="adminWelcome"><div><h1>{copy.title}</h1><span>{copy.description}</span></div><span className="adminStatus"><i />{dashboard.data.activeSemester?.registrationOpen ? "Registration open" : "Registration closed"}</span></div>
-      {view === "dashboard" && <Overview dashboard={dashboard.data} />}{view === "courses" && <CourseCatalogue options={options.data} />}{view === "offerings" && <OfferingManagement options={options.data} dashboard={dashboard.data} />}{view === "results" && <ResultApproval />}
+      {view === "dashboard" && <Overview dashboard={dashboard.data} />}{view === "courses" && <CourseCatalogue options={options.data} />}{view === "offerings" && <OfferingManagement options={options.data} dashboard={dashboard.data} />}{view === "results" && <ResultApproval />}{view === "users" && <UserManagement options={options.data} />}
     </main></div></div>;
 }

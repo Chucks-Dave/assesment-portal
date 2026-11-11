@@ -8,15 +8,15 @@ web
 
 ## Users
 
-University students managing their academic activities, lecturers preparing result batches, and administrators publishing the academic catalogue, semester offerings, and reviewing submitted results. Broader user management remains outside the current phase.
+University students managing their academic activities, lecturers preparing result batches, and administrators publishing the academic catalogue, semester offerings, reviewing submitted results, and managing user accounts.
 
 ## Product Purpose
 
-UEMP provides authenticated student access to approved academic records, lecturer access to audited result preparation and submission, and administrator access to course, offering, and result-approval management.
+UEMP provides authenticated student access to approved academic records and profile contact maintenance, lecturer access to audited result preparation and submission, and administrator access to course, offering, result-approval, and user-account management.
 
 ## Capabilities and Constraints
 
-One Next.js App Router application with TypeScript, PostgreSQL, and Prisma. Custom cookie sessions and PostgreSQL-backed throttling; no Redis or authentication library. Student, lecturer, and administrator workspaces exist. Lecturers prepare and submit complete result batches; administrators approve them or return them with feedback. Broader user management remains next-phase work. Never imply that a particular university or academic calendar has been supplied.
+One Next.js App Router application with TypeScript, PostgreSQL, and Prisma. Custom cookie sessions and PostgreSQL-backed throttling; no Redis or authentication library. Student, lecturer, and administrator workspaces exist. Lecturers prepare and submit complete result batches; administrators approve them or return them with feedback. Administrators can create role-aware student, lecturer, and administrator accounts; filter the user directory; change account status; revoke sessions; and reset passwords, while the signed-in administrator account is protected from self-directed account actions. Authenticated students can print course-registration summaries and approved-result statements for their records; these copies are explicitly non-certified and must include the complete relevant record set rather than only the currently loaded cursor page. Never imply that a particular university or academic calendar has been supplied.
 
 ## Brand Commitments
 
